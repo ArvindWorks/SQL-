@@ -181,3 +181,67 @@ SELECT *,((MAX_SAL - SALARY)/SALARY)*100,  -- HERE I AM CALCULATING WHAT PERCENT
 CASE WHEN RK = 1 THEN 'TOP '
 WHEN ((MAX_SAL - SALARY)/SALARY)*100 < 10 THEN 'AVG'
 ELSE 'WORST' END STATUS FROM CTE
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+------WAQ TO GET THE HIGHEST AND LOWEST POPULATED CITY IN EACH STATE
+
+CREATE TABLE city_population (
+    state VARCHAR(50),
+    city VARCHAR(50),
+    population INT
+);
+
+-- Insert the data
+INSERT INTO city_population (state, city, population) VALUES ('haryana', 'ambala', 100);
+INSERT INTO city_population (state, city, population) VALUES ('haryana', 'panipat', 200);
+INSERT INTO city_population (state, city, population) VALUES ('haryana', 'gurgaon', 300);
+INSERT INTO city_population (state, city, population) VALUES ('punjab', 'amritsar', 150);
+INSERT INTO city_population (state, city, population) VALUES ('punjab', 'ludhiana', 400);
+INSERT INTO city_population (state, city, population) VALUES ('punjab', 'jalandhar', 250);
+INSERT INTO city_population (state, city, population) VALUES ('maharashtra', 'mumbai', 1000);
+INSERT INTO city_population (state, city, population) VALUES ('maharashtra', 'pune', 600);
+INSERT INTO city_population (state, city, population) VALUES ('maharashtra', 'nagpur', 300);
+INSERT INTO city_population (state, city, population) VALUES ('karnataka', 'bangalore', 900);
+INSERT INTO city_population (state, city, population) VALUES ('karnataka', 'mysore', 400);
+INSERT INTO city_population (state, city, population) VALUES ('karnataka', 'mangalore', 200);
+
+
+--ONE WAY USING RANK
+WITH CTE AS (
+    SELECT *,
+           RANK() OVER (PARTITION BY STATE ORDER BY POPULATION) AS RK,
+           RANK() OVER (PARTITION BY STATE ORDER BY POPULATION DESC) AS RKK
+    FROM CITY_POPULATION
+)
+SELECT STATE,
+       MAX(CASE WHEN RK = 1 THEN CITY END) AS LESS_POPULATED,
+       MAX(CASE WHEN RKK = 1 THEN CITY END) AS HIGH_POPULATED
+FROM CTE
+GROUP BY STATE;
+
+--ANOTHER WAY USING FIRST_VALUE AND LAST_VALUE
+
+SELECT STATE,
+       MAX(LESS_PP) AS LESS_POPULATED,
+       MAX(HIGH_POP) AS HIGH_POPULATED
+FROM (
+    SELECT STATE,
+           FIRST_VALUE(CITY) OVER (PARTITION BY STATE ORDER BY POPULATION) AS LESS_PP,
+           LAST_VALUE(CITY) OVER (PARTITION BY STATE ORDER BY POPULATION
+                                  ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS HIGH_POP
+    FROM CITY_POPULATION
+) AB
+GROUP BY STATE;
+
+--ANOTHER WAY USING MAX WINDOW FUNCTION
+
+WITH CTE AS(
+              SELECT *,
+              MAX(POPULATION) OVER(PARTITION BY STATE) MAX_POP,
+              MIN(POPULATION) OVER(PARTITION BY STATE) MIN_POP 
+              FROM CITY_POPULATION
+          )
+
+SELECT STATE,
+MAX(CASE WHEN POPULATION = MIN_POP THEN CITY END) MIN_POPULATION,
+MAX(CASE WHEN POPULATION = MAX_POP THEN CITY END) MAX_POPULATION
+FROM CTE GROUP BY STATE
