@@ -245,3 +245,57 @@ SELECT STATE,
 MAX(CASE WHEN POPULATION = MIN_POP THEN CITY END) MIN_POPULATION,
 MAX(CASE WHEN POPULATION = MAX_POP THEN CITY END) MAX_POPULATION
 FROM CTE GROUP BY STATE
+
+----------------------------------------------------------------------------------------------------------------------------------------------------
+--WAQ TO GET THE PRODUCT NAME WHICH CONTRIBUTE 80% OF THE TOTAL SALES
+CREATE TABLE Products (
+
+    ProductID INT PRIMARY KEY,
+
+    Name VARCHAR(50),
+
+    Sales DECIMAL(10, 2)
+
+);
+
+
+
+-- Insert data into the table
+
+INSERT INTO Products (ProductID, Name, Sales) VALUES
+
+(1, 'Laptop', 8000.00),
+
+(2, 'Smartphone', 7000.00),
+
+(3, 'Tablet', 1500.00),
+
+(4, 'Headphones', 800.00),
+
+(5, 'Smartwatch', 700.00),
+
+(6, 'Monitor', 500.00),
+
+(7, 'Keyboard', 300.00),
+
+(8, 'Mouse', 200.00),
+
+(9, 'Charger', 100.00),
+
+(10, 'USB Cable', 100.00);
+
+----SOLUTION
+WITH CTE AS (
+    SELECT *, 
+           SUM(SALES) OVER() TOT_SALES,
+           (SALES / SUM(SALES) OVER()) * 100 PERC
+    FROM PRODUCTS
+),
+B AS (
+    SELECT *, 
+           SUM(PERC) OVER(ORDER BY PRODUCTID) RUNNING
+    FROM CTE
+)
+SELECT PRODUCTID, NAME 
+FROM B 
+WHERE RUNNING < 80;
