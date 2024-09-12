@@ -364,3 +364,27 @@ SELECT A.DRIVERID, A.NAME,
        END AS INCENTIVE
 FROM CTE A
 JOIN B ON A.DRIVERID = B.DRIVERID;
+------------------------------------------------------------------------------------------------------------------------------------------------
+--WAQ TO GET THE MISSING WEEKS
+CREATE TABLE SLS_TBL (PID INT, SLS_DT DATE, SLS_AMT INT);
+
+-- Insert data into the table
+INSERT INTO SLS_TBL (PID, SLS_DT, SLS_AMT)
+VALUES 
+    (201, '2024-07-11', 140), 
+    (201, '2024-07-18', 160), 
+    (201, '2024-07-25', 150), 
+    (201, '2024-08-01', 180), 
+    (201, '2024-08-15', 170), 
+    (201, '2024-08-29', 130);
+---SOLUTION
+WITH CTE AS (
+    SELECT *,
+           LEAD(SLS_DT) OVER (ORDER BY SLS_DT) AS NXTDAY,
+           DATEDIFF(DAY, SLS_DT, LEAD(SLS_DT) OVER (ORDER BY SLS_DT)) AS DIFF
+    FROM SLS_TBL
+)
+SELECT CASE WHEN DIFF > 7 THEN DATEADD(DAY, 7, SLS_DT) END AS MISSING_WK
+FROM CTE
+WHERE DIFF > 7;
+
